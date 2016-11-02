@@ -1,0 +1,3 @@
+[submodule "themes/pln"]
+	path = themes/pln
+	url = git@github.com:marshalys/hexo-theme-pln.git
