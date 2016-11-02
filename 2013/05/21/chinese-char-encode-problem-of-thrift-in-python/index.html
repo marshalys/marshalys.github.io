@@ -1,0 +1,167 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="google-site-verification" content="" />
+  
+  <title>python使用thrift中文编码问题解决</title>
+  <meta name="author" content="Mars Yuan">
+   <meta name="description" content="使用thrift（版本0.9.0，客户端、服务器端皆为python），过程中遇到了中文编码问题。string类型的值如果有中文会出现异常。网上查了一下，发现了一些有价值的信息，其中有说在0.9.0时生成代码加上utf8strings选项就可以解决此问题。于是马上去试了一下，发现问题依然存在。决定还是老老实实看一下代码，进过各种折腾，最终还是搞定了这个问题。
+原来是因为我用了fastbinary这个扩展，而在0.9.0中这个扩展并没有支持uft8字符串。于是参考了网上一些解决方案的补丁，修改了fastbinary.c文件。用这个代码重新安装python的thrift库后问题解决。">
+  
+
+  <meta property="og:title" content="python使用thrift中文编码问题解决"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta property="og:site_name" content="Mars Yuan&#39;s Blog"/>
+ <meta property="og:image" content="undefined"/>
+  
+  <link href="/apple-touch-icon-precomposed.png" sizes="180x180" rel="apple-touch-icon-precomposed">
+  <link rel="alternate" href="/atom.xml" title="Mars Yuan&#39;s Blog" type="application/atom+xml">
+  <link rel="stylesheet" href="//cdn.bootcss.com/bootstrap/3.3.6/css/bootstrap.min.css">
+  <link rel="stylesheet" href="//cdn.bootcss.com/font-awesome/4.5.0/css/font-awesome.min.css">
+  <link rel="stylesheet" href="/css/m.min.css">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+</head>
+
+<body>
+  <div id="main">
+    <div class="behind">
+      <div class="back">
+        <a href="/" class="black-color"><i class="fa fa-times" aria-hidden="true"></i></a>
+      </div>
+      <div class="description">
+        &nbsp;Free Fly
+      </div>
+    </div>
+    <div class="container">
+      
+
+  <article class="standard post">
+    <div class="title">
+      
+  
+    <h1 class="page-title center">
+        python使用thrift中文编码问题解决
+    </h1>
+  
+
+
+    </div>
+    <div class="meta center">
+      
+<time datetime="2013-05-21T07:32:00.000Z">
+  <i class="fa fa-calendar"></i>&nbsp;
+  2013-05-21
+</time>
+
+
+
+    
+    &nbsp;
+    <i class="fa fa-tag"></i>&nbsp;
+    <a href="/categories/技术点滴/">技术点滴</a>
+
+
+
+
+    
+    &nbsp;
+    <i class="fa fa-tag"></i>&nbsp;
+    <a href="/tags/thrift/">thrift</a>·<a href="/tags/python/">python</a>·<a href="/tags/中文编码/">中文编码</a>
+
+
+    </div>
+    <hr>
+    <div class="picture-container">
+      
+    </div>
+    <p>使用thrift（版本0.9.0，客户端、服务器端皆为python），过程中遇到了中文编码问题。string类型的值如果有中文会出现异常。网上查了一下，发现了一些有价值的信息，其中有说在0.9.0时生成代码加上utf8strings选项就可以解决此问题。于是马上去试了一下，发现问题依然存在。决定还是老老实实看一下代码，进过各种折腾，最终还是搞定了这个问题。</p>
+<p>原来是因为我用了fastbinary这个扩展，而在0.9.0中这个扩展并没有支持uft8字符串。于是参考了网上一些解决方案的补丁，修改了fastbinary.c文件。用这个代码重新安装python的thrift库后问题解决。<br><a id="more"></a><br>最终我是通过加上utf8strings选项同时修改了fastbinary.c的代码来搞定了这个问题。</p>
+<p>下面附上修改后的代码片段。</p>
+<p>fastbinary.c<br><figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">case</span> T_STRING: &#123;</div><div class="line">    PyObject* utf8_str_val = <span class="literal">NULL</span>;</div><div class="line"></div><div class="line">     <span class="keyword">if</span> (value-&gt;ob_type == &amp;PyUnicode_Type) &#123;</div><div class="line">          utf8_str_val = PyUnicode_AsUTF8String(value);</div><div class="line">          <span class="keyword">if</span> (utf8_str_val == <span class="literal">NULL</span>) &#123;</div><div class="line">               <span class="keyword">return</span> <span class="literal">false</span>;</div><div class="line">          &#125;</div><div class="line">     &#125;</div><div class="line"></div><div class="line">     PyObject* str_val = utf8_str_val == <span class="literal">NULL</span> ? value : utf8_str_val;</div><div class="line">     Py_ssize_t len = PyString_Size(str_val);</div><div class="line"></div><div class="line">    <span class="keyword">if</span> (!check_ssize_t_32(len)) &#123;</div><div class="line">      <span class="keyword">return</span> <span class="literal">false</span>;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    writeI32(output, (<span class="keyword">int32_t</span>) len);</div><div class="line">    PycStringIO-&gt;cwrite(output, PyString_AsString(str_val), (<span class="keyword">int32_t</span>) len);</div><div class="line"></div><div class="line">     Py_XDECREF(utf8_str_val)</div><div class="line">    <span class="keyword">break</span>;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>另，参考的网上资料如下，感谢！</p>
+<p><a href="https://github.com/originell/thrift" target="_blank" rel="external">https://github.com/originell/thrift</a></p>
+<p><a href="https://issues.apache.org/jira/browse/THRIFT-1460" target="_blank" rel="external">https://issues.apache.org/jira/browse/THRIFT-1460</a></p>
+<p><a href="https://issues.apache.org/jira/browse/THRIFT-395" target="_blank" rel="external">https://issues.apache.org/jira/browse/THRIFT-395</a></p>
+
+
+  </article>
+  </script>
+    <script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+  </script>
+  <div class="busuanzi center">
+    page PV:&nbsp;<span id="busuanzi_value_page_pv"></span>&nbsp;・&nbsp;
+    site PV:&nbsp;<span id="busuanzi_value_site_pv"></span>&nbsp;・&nbsp;
+    site UV:&nbsp;<span id="busuanzi_value_site_uv"></span>
+  </div>
+
+
+
+
+    </div>
+  </div>
+  <footer class="page-footer"><div class="clearfix">
+</div>
+<div class="right-foot container">
+    <div class="firstrow">
+        <a href="#top" >
+        <i class="fa fa-arrow-right"></i>
+        </a>
+        © Free Fly 2005-2083
+    </div>
+    <div class="secondrow">
+        <a href="https://marshalys.github.io/">
+        Mars Yuan
+        </a>
+    </div>
+</div>
+<div class="clearfix">
+</div>
+</footer>
+  <script src="//cdn.bootcss.com/jquery/2.2.1/jquery.min.js"></script>
+<script src="/js/search.js"></script>
+<script type="text/javascript">
+
+// comments below to disable loading animation
+function revealOnScroll() {
+  var scrolled = $(window).scrollTop();
+  $(".excerpt, .index-title, .index-meta, p").each(function() {
+    var current = $(this),
+      height = $(window).outerHeight(),
+      offsetTop = current.offset().top;
+    (scrolled + height + 50 > offsetTop) ? current.addClass("animation"):'';
+  });
+}
+$(window).on("scroll", revealOnScroll);
+$(document).ready(revealOnScroll)
+
+// disqus scripts
+
+
+// dropdown scripts
+$(".dropdown").click(function(event) {
+  var current = $(this);
+  event.stopPropagation();
+  $(current).children(".dropdown-content")[($(current).children(".dropdown-content").hasClass("open"))?'removeClass':'addClass']("open")
+});
+$(document).click(function(){
+    $(".dropdown-content").removeClass("open");
+})
+
+// back to top scripts
+$("a[href='#top']").click(function() {
+  $("html, body").animate({ scrollTop: 0 }, 500);
+  return false;
+});
+
+
+var path = "/search.xml";
+searchFunc(path, 'local-search-input', 'local-search-result');
+
+</script>
+
+</body>
+</html>

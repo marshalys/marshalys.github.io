@@ -1,0 +1,177 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="google-site-verification" content="" />
+  
+  <title>Python中使用带参数Decorator不加括号时出现错误解决</title>
+  <meta name="author" content="Mars Yuan">
+   <meta name="description" content="最进使用Django开发网站，有用到ajax的地方，封装了一个Decorator用于将服务器返回数据接口统一为JSON格式，代码类似与：1234567def json_service(func):    @wraps(func)    def _fn(*args, **kwargs):        result = func(*args, **kwargs)        content = json.dumps(result, cls=DjangoJSONEncoder)        return HttpResponse(content, content_type=&#39;application/json&#39;)    return _fn
+这样在view里面可以很简单的如下面这样调用：1234567@json_servicedef logon(request):    ...@json_servicedef list(request):    ...
+这样感觉是挺简介优雅的。不过很快就出现要对json_service进行修改的需求了，因为有些地方需要用户登录后才运行进行操作的，因此，这些ajax的接口必须加上权限相关的判断，最简单的就是判断下用户是否登录。">
+  
+
+  <meta property="og:title" content="Python中使用带参数Decorator不加括号时出现错误解决"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta property="og:site_name" content="Mars Yuan&#39;s Blog"/>
+ <meta property="og:image" content="undefined"/>
+  
+  <link href="/apple-touch-icon-precomposed.png" sizes="180x180" rel="apple-touch-icon-precomposed">
+  <link rel="alternate" href="/atom.xml" title="Mars Yuan&#39;s Blog" type="application/atom+xml">
+  <link rel="stylesheet" href="//cdn.bootcss.com/bootstrap/3.3.6/css/bootstrap.min.css">
+  <link rel="stylesheet" href="//cdn.bootcss.com/font-awesome/4.5.0/css/font-awesome.min.css">
+  <link rel="stylesheet" href="/css/m.min.css">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+</head>
+
+<body>
+  <div id="main">
+    <div class="behind">
+      <div class="back">
+        <a href="/" class="black-color"><i class="fa fa-times" aria-hidden="true"></i></a>
+      </div>
+      <div class="description">
+        &nbsp;Free Fly
+      </div>
+    </div>
+    <div class="container">
+      
+
+  <article class="standard post">
+    <div class="title">
+      
+  
+    <h1 class="page-title center">
+        Python中使用带参数Decorator不加括号时出现错误解决
+    </h1>
+  
+
+
+    </div>
+    <div class="meta center">
+      
+<time datetime="2014-01-02T12:03:00.000Z">
+  <i class="fa fa-calendar"></i>&nbsp;
+  2014-01-02
+</time>
+
+
+
+    
+    &nbsp;
+    <i class="fa fa-tag"></i>&nbsp;
+    <a href="/categories/技术点滴/">技术点滴</a>
+
+
+
+
+    
+    &nbsp;
+    <i class="fa fa-tag"></i>&nbsp;
+    <a href="/tags/python/">python</a>·<a href="/tags/decorator/">decorator</a>·<a href="/tags/django/">django</a>
+
+
+    </div>
+    <hr>
+    <div class="picture-container">
+      
+    </div>
+    <p>最进使用Django开发网站，有用到ajax的地方，封装了一个Decorator用于将服务器返回数据接口统一为JSON格式，代码类似与：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">json_service</span><span class="params">(func)</span>:</span></div><div class="line"><span class="meta">    @wraps(func)</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">_fn</span><span class="params">(*args, **kwargs)</span>:</span></div><div class="line">        result = func(*args, **kwargs)</div><div class="line">        content = json.dumps(result, cls=DjangoJSONEncoder)</div><div class="line">        <span class="keyword">return</span> HttpResponse(content, content_type=<span class="string">'application/json'</span>)</div><div class="line">    <span class="keyword">return</span> _fn</div></pre></td></tr></table></figure></p>
+<p>这样在view里面可以很简单的如下面这样调用：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="meta">@json_service</span></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">logon</span><span class="params">(request)</span>:</span></div><div class="line">    ...</div><div class="line"></div><div class="line"><span class="meta">@json_service</span></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">list</span><span class="params">(request)</span>:</span></div><div class="line">    ...</div></pre></td></tr></table></figure></p>
+<p>这样感觉是挺简介优雅的。不过很快就出现要对<code>json_service</code>进行修改的需求了，因为有些地方需要用户登录后才运行进行操作的，因此，这些ajax的接口必须加上权限相关的判断，最简单的就是判断下用户是否登录。<br><a id="more"></a><br>于是看了下Django的接口，发现自带一个<code>login_required</code>的Decorator，但是是用于页面的，不太适用于这种ajax请求，于是打算改造一下<code>json_service</code>增加一个参数用于判断这个ajax接口是否需要判断用户是否登录，<em>（其实再封装一个新的Decorator也未尝不可，只是觉得那样代码写起来可能有些累赘）</em>，于是修改了下<code>json_service</code>：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">json_service</span><span class="params">(need_logon=False)</span>:</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">decorator</span><span class="params">(func)</span>:</span></div><div class="line"><span class="meta">        @wraps(func)</span></div><div class="line">        <span class="function"><span class="keyword">def</span> <span class="title">_fn</span><span class="params">(request, *args, **kwargs)</span>:</span></div><div class="line">            <span class="keyword">if</span> need_logon <span class="keyword">and</span> <span class="keyword">not</span> request.user.is_authenticated():</div><div class="line">                result = fail(_(<span class="string">'need logon, please refresh page and retry.'</span>))</div><div class="line">            <span class="keyword">else</span>:</div><div class="line">                result = func(request, *args, **kwargs)</div><div class="line">            content = json.dumps(result, cls=DjangoJSONEncoder)</div><div class="line">            <span class="keyword">return</span> HttpResponse(content, content_type=<span class="string">'application/json'</span>)</div><div class="line">        <span class="keyword">return</span> _fn</div><div class="line">    <span class="keyword">return</span> decorator</div></pre></td></tr></table></figure></p>
+<p>同时将原来view里面的代码稍稍修改：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="meta">@json_service(need_logon=True)</span></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">logon</span><span class="params">(request)</span>:</span></div><div class="line">    ...</div><div class="line"></div><div class="line"><span class="meta">@json_service</span></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">list</span><span class="params">(request)</span>:</span></div><div class="line">    ...</div></pre></td></tr></table></figure></p>
+<p>便以为大工告成了。结果，<code>logon</code>这个接口一切正常，<code>list</code>这个接口确出错了。</p>
+<p>其实这个问题，我以前也遇到过一次，后来通过加括号把<code>@json_service</code>改为<code>@json_service()</code>解决了，这个是跟Decorator本身机制有关，简单说来Decorator的机制可以如下理解<em>（参考：<a href="http://www.python.org/dev/peps/pep-0318/" target="_blank" rel="external">pep-0318</a>）</em>：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="meta">@dec2</span></div><div class="line"><span class="meta">@dec1</span></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">func</span><span class="params">(arg1, arg2, ...)</span>:</span></div><div class="line">    <span class="keyword">pass</span></div></pre></td></tr></table></figure></p>
+<p>等价于：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">func</span><span class="params">(arg1, arg2, ...)</span>:</span></div><div class="line">    <span class="keyword">pass</span></div><div class="line">func = dec2(dec1(func))</div></pre></td></tr></table></figure></p>
+<p>而<br><figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="meta">@decomaker(argA, argB, ...)</span></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">func</span><span class="params">(arg1, arg2, ...)</span>:</span></div><div class="line">    <span class="keyword">pass</span></div></pre></td></tr></table></figure></p>
+<p>等价于：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">func = decomaker(argA, argB, ...)(func)</div></pre></td></tr></table></figure></p>
+<p>所以如果不加括号的话就会出问题。</p>
+<p>本来觉得加括号就加括号吧，也没啥，但是之前查API时看到Django的那个<code>login_required</code>了，貌似人家那个带参数的就可以不带括号写。于是研究了下Django的机制，最后改造了一个可以不带括号写的版本：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">_json_service_decorator</span><span class="params">(need_logon)</span>:</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">decorator</span><span class="params">(func)</span>:</span></div><div class="line"><span class="meta">        @wraps(func)</span></div><div class="line">        <span class="function"><span class="keyword">def</span> <span class="title">_fn</span><span class="params">(request, *args, **kwargs)</span>:</span></div><div class="line">            <span class="keyword">if</span> need_logon <span class="keyword">and</span> <span class="keyword">not</span> request.user.is_authenticated():</div><div class="line">                result = fail(_(<span class="string">'need logon, please refresh page and retry.'</span>))</div><div class="line">            <span class="keyword">else</span>:</div><div class="line">                result = func(request, *args, **kwargs)</div><div class="line">            content = json.dumps(result, cls=DjangoJSONEncoder)</div><div class="line">            <span class="keyword">return</span> HttpResponse(content, content_type=<span class="string">'application/json'</span>)</div><div class="line">        <span class="keyword">return</span> _fn</div><div class="line">    <span class="keyword">return</span> decorator</div><div class="line"></div><div class="line"></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">json_service</span><span class="params">(function=None, need_logon=True)</span>:</span></div><div class="line">    decorator = _json_service_decorator(need_logon)</div><div class="line">    <span class="keyword">if</span> function:</div><div class="line">        <span class="keyword">return</span> decorator(function)</div><div class="line">    <span class="keyword">return</span> decorator</div></pre></td></tr></table></figure></p>
+<p>嗯，终于搞定了。</p>
+<p>最后不得不感叹两句：</p>
+<ol>
+<li>Python机制真是挺灵活！</li>
+<li>开源就是好！</li>
+</ol>
+
+
+  </article>
+  </script>
+    <script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+  </script>
+  <div class="busuanzi center">
+    page PV:&nbsp;<span id="busuanzi_value_page_pv"></span>&nbsp;・&nbsp;
+    site PV:&nbsp;<span id="busuanzi_value_site_pv"></span>&nbsp;・&nbsp;
+    site UV:&nbsp;<span id="busuanzi_value_site_uv"></span>
+  </div>
+
+
+
+
+    </div>
+  </div>
+  <footer class="page-footer"><div class="clearfix">
+</div>
+<div class="right-foot container">
+    <div class="firstrow">
+        <a href="#top" >
+        <i class="fa fa-arrow-right"></i>
+        </a>
+        © Free Fly 2005-2083
+    </div>
+    <div class="secondrow">
+        <a href="https://marshalys.github.io/">
+        Mars Yuan
+        </a>
+    </div>
+</div>
+<div class="clearfix">
+</div>
+</footer>
+  <script src="//cdn.bootcss.com/jquery/2.2.1/jquery.min.js"></script>
+<script src="/js/search.js"></script>
+<script type="text/javascript">
+
+// comments below to disable loading animation
+function revealOnScroll() {
+  var scrolled = $(window).scrollTop();
+  $(".excerpt, .index-title, .index-meta, p").each(function() {
+    var current = $(this),
+      height = $(window).outerHeight(),
+      offsetTop = current.offset().top;
+    (scrolled + height + 50 > offsetTop) ? current.addClass("animation"):'';
+  });
+}
+$(window).on("scroll", revealOnScroll);
+$(document).ready(revealOnScroll)
+
+// disqus scripts
+
+
+// dropdown scripts
+$(".dropdown").click(function(event) {
+  var current = $(this);
+  event.stopPropagation();
+  $(current).children(".dropdown-content")[($(current).children(".dropdown-content").hasClass("open"))?'removeClass':'addClass']("open")
+});
+$(document).click(function(){
+    $(".dropdown-content").removeClass("open");
+})
+
+// back to top scripts
+$("a[href='#top']").click(function() {
+  $("html, body").animate({ scrollTop: 0 }, 500);
+  return false;
+});
+
+
+var path = "/search.xml";
+searchFunc(path, 'local-search-input', 'local-search-result');
+
+</script>
+
+</body>
+</html>

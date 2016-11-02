@@ -1,0 +1,714 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="google-site-verification" content="" />
+  
+  <title>Mars Yuan&#39;s Blog</title>
+  <meta name="author" content="Mars Yuan">
+  
+
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta property="og:site_name" content="Mars Yuan&#39;s Blog"/>
+ <meta property="og:image" content="undefined"/>
+  
+  <link href="/apple-touch-icon-precomposed.png" sizes="180x180" rel="apple-touch-icon-precomposed">
+  <link rel="alternate" href="/atom.xml" title="Mars Yuan&#39;s Blog" type="application/atom+xml">
+  <link rel="stylesheet" href="//cdn.bootcss.com/bootstrap/3.3.6/css/bootstrap.min.css">
+  <link rel="stylesheet" href="//cdn.bootcss.com/font-awesome/4.5.0/css/font-awesome.min.css">
+  <link rel="stylesheet" href="/css/m.min.css">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+</head>
+
+<body>
+  <div id="main">
+    <div class="behind">
+      <div class="back">
+        <a href="/" class="black-color"><i class="fa fa-times" aria-hidden="true"></i></a>
+      </div>
+      <div class="description">
+        &nbsp;Free Fly
+      </div>
+    </div>
+    <div class="container">
+      <nav class="navigator"><nav class="navbar navbar-default navbar-fixed-top">
+  <div class="nav-container">
+
+
+  
+  <ul class="nav navbar-nav navbar-left">
+    <li class="navbar-header">
+      <a href="/" class="navbar-brand">Free Fly</a>
+    </li>
+    <li class="dropdown">
+      <a href="javascript:void(0);" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+        <i class="fa fa-tags fa-lg"></i>
+      </span></a>
+      <ul class="dropdown-content">
+
+          
+           <li><a href="/categories/技术点滴/">技术点滴</a></li><li><a href="/categories/读书笔记/">读书笔记</a></li>
+
+      </ul>
+    </li>
+  </ul>
+  
+  <div id="site_search" class="">
+  <input type="text" id="local-search-input" name="q" placeholder="search" class="form-control"/>
+</div>
+<div id="local-search-result"></div>
+
+
+  <ul class="nav navbar-nav navbar-right">
+    <li class="dropdown">
+      <a href="javascript:void(0);" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
+      <i class="fa fa-link fa-lg"></i>
+      </a>
+      <ul class="dropdown-content">
+        
+          <li>
+            <a href="https://github.com/marshalys/">
+        Github
+      </a>
+    </li>
+     
+          <li>
+            <a href="/atom.xml">
+        atom
+      </a>
+    </li>
+     
+    </ul>
+    </li>
+    <li class="archives"><a href="/archives">
+      <i class="fa fa-archive fa-lg"></i>
+    </a></li>
+  </ul>
+  </div>
+</nav></nav>
+<ul class="posts">
+  
+    
+<div>
+<li class="post-item">
+  
+  
+    <h1 class="index-title">
+        <a href="/2014/01/02/pythonzhong-shi-yong-dai-can-shu-decoratorbu-jia-gua-hao-shi-chu-xian-cuo-wu-jie-jue/">
+            Python中使用带参数Decorator不加括号时出现错误解决
+        </a>
+    </h1>
+  
+
+
+  <div class="excerpt">
+  
+    <p>最进使用Django开发网站，有用到ajax的地方，封装了一个Decorator用于将服务器返回数据接口统一为JSON格式，代码类似与：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">json_service</span><span class="params">(func)</span>:</span></div><div class="line"><span class="meta">    @wraps(func)</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">_fn</span><span class="params">(*args, **kwargs)</span>:</span></div><div class="line">        result = func(*args, **kwargs)</div><div class="line">        content = json.dumps(result, cls=DjangoJSONEncoder)</div><div class="line">        <span class="keyword">return</span> HttpResponse(content, content_type=<span class="string">'application/json'</span>)</div><div class="line">    <span class="keyword">return</span> _fn</div></pre></td></tr></table></figure></p>
+<p>这样在view里面可以很简单的如下面这样调用：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="meta">@json_service</span></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">logon</span><span class="params">(request)</span>:</span></div><div class="line">    ...</div><div class="line"></div><div class="line"><span class="meta">@json_service</span></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">list</span><span class="params">(request)</span>:</span></div><div class="line">    ...</div></pre></td></tr></table></figure></p>
+<p>这样感觉是挺简介优雅的。不过很快就出现要对<code>json_service</code>进行修改的需求了，因为有些地方需要用户登录后才运行进行操作的，因此，这些ajax的接口必须加上权限相关的判断，最简单的就是判断下用户是否登录。<br>
+  
+  <a href="/2014/01/02/pythonzhong-shi-yong-dai-can-shu-decoratorbu-jia-gua-hao-shi-chu-xian-cuo-wu-jie-jue/">
+    more
+  </a>
+  </div>
+  <div class="index-meta">
+    
+<time datetime="2014-01-02T12:03:00.000Z" itemprop="datePublished">
+  <i class="fa fa-calendar"></i>&nbsp;
+  01-02
+</time>
+
+
+
+    
+    &nbsp;
+    <i class="fa fa-tag"></i>&nbsp;
+    <a href="/categories/技术点滴/">技术点滴</a>
+
+
+
+
+    
+    &nbsp;
+    <i class="fa fa-tag"></i>&nbsp;
+    <a href="/tags/python/">python</a>·<a href="/tags/decorator/">decorator</a>·<a href="/tags/django/">django</a>
+
+
+  </div>
+</li>
+</div>
+<hr>
+
+
+
+
+  
+    
+<div>
+<li class="post-item">
+  
+  
+    <h1 class="index-title">
+        <a href="/2013/07/07/android-sdk-setup-error/">
+            Android SDK安装
+        </a>
+    </h1>
+  
+
+
+  <div class="excerpt">
+  
+    <p>今天尝试了一下安装android sdk，发现还是挺折腾的，于是记录一下：</p>
+<p>首先在<a href="http://developer.android.com/sdk/index.html">android SDK页面</a>页面下在sdk包（我选的是不跟ADT绑定的）。这个过程还挺顺利，很快就把100多M的压缩包下载好了。</p>
+<p>然后，我打开我的idea12，打算新建一个android工程试试，发现需要指定sdk目录，于是设置好，却发现指向失败了，提示”can’t find any android targets”，于是查了一些资料，发现自己目前完全没有搞清楚这个sdk是怎么用的：下载完这个基本的sdk压缩包其实只是很少的一部分，后续还需要安装各种安卓版本相关的包，需要通过tools/android来进行管理。<br>
+  
+  <a href="/2013/07/07/android-sdk-setup-error/">
+    more
+  </a>
+  </div>
+  <div class="index-meta">
+    
+<time datetime="2013-07-07T10:29:00.000Z" itemprop="datePublished">
+  <i class="fa fa-calendar"></i>&nbsp;
+  07-07
+</time>
+
+
+
+    
+    &nbsp;
+    <i class="fa fa-tag"></i>&nbsp;
+    <a href="/categories/技术点滴/">技术点滴</a>
+
+
+
+
+    
+    &nbsp;
+    <i class="fa fa-tag"></i>&nbsp;
+    <a href="/tags/android/">android</a>
+
+
+  </div>
+</li>
+</div>
+<hr>
+
+
+
+
+  
+    
+<div>
+<li class="post-item">
+  
+  
+    <h1 class="index-title">
+        <a href="/2013/05/21/discuzmo-ban-huan-cun-qing-li/">
+            discuz模版缓存清理
+        </a>
+    </h1>
+  
+
+
+  <div class="excerpt">
+  
+    同事把论坛换了一台服务器，发现页面内容全乱了，向我求救。于是去看了一下，发现页面输出貌似有php代码，原来discuz用了短标签，于是让同事调整php.ini的设置，允许端标签使用1short_open_tag=On
+修改后重启php，发现
+  
+  <a href="/2013/05/21/discuzmo-ban-huan-cun-qing-li/">
+    more
+  </a>
+  </div>
+  <div class="index-meta">
+    
+<time datetime="2013-05-21T07:51:00.000Z" itemprop="datePublished">
+  <i class="fa fa-calendar"></i>&nbsp;
+  05-21
+</time>
+
+
+
+    
+    &nbsp;
+    <i class="fa fa-tag"></i>&nbsp;
+    <a href="/categories/技术点滴/">技术点滴</a>
+
+
+
+
+    
+    &nbsp;
+    <i class="fa fa-tag"></i>&nbsp;
+    <a href="/tags/php/">php</a>·<a href="/tags/discuz/">discuz</a>
+
+
+  </div>
+</li>
+</div>
+<hr>
+
+
+
+
+  
+    
+<div>
+<li class="post-item">
+  
+  
+    <h1 class="index-title">
+        <a href="/2013/05/21/chinese-char-encode-problem-of-thrift-in-python/">
+            python使用thrift中文编码问题解决
+        </a>
+    </h1>
+  
+
+
+  <div class="excerpt">
+  
+    <p>使用thrift（版本0.9.0，客户端、服务器端皆为python），过程中遇到了中文编码问题。string类型的值如果有中文会出现异常。网上查了一下，发现了一些有价值的信息，其中有说在0.9.0时生成代码加上utf8strings选项就可以解决此问题。于是马上去试了一下，发现问题依然存在。决定还是老老实实看一下代码，进过各种折腾，最终还是搞定了这个问题。</p>
+<p>原来是因为我用了fastbinary这个扩展，而在0.9.0中这个扩展并没有支持uft8字符串。于是参考了网上一些解决方案的补丁，修改了fastbinary.c文件。用这个代码重新安装python的thrift库后问题解决。<br>
+  
+  <a href="/2013/05/21/chinese-char-encode-problem-of-thrift-in-python/">
+    more
+  </a>
+  </div>
+  <div class="index-meta">
+    
+<time datetime="2013-05-21T07:32:00.000Z" itemprop="datePublished">
+  <i class="fa fa-calendar"></i>&nbsp;
+  05-21
+</time>
+
+
+
+    
+    &nbsp;
+    <i class="fa fa-tag"></i>&nbsp;
+    <a href="/categories/技术点滴/">技术点滴</a>
+
+
+
+
+    
+    &nbsp;
+    <i class="fa fa-tag"></i>&nbsp;
+    <a href="/tags/thrift/">thrift</a>·<a href="/tags/python/">python</a>·<a href="/tags/中文编码/">中文编码</a>
+
+
+  </div>
+</li>
+</div>
+<hr>
+
+
+
+
+  
+    
+<div>
+<li class="post-item">
+  
+  
+    <h1 class="index-title">
+        <a href="/2013/05/21/implement-of-namespace-package-in-python/">
+            python的namespace package实现方式
+        </a>
+    </h1>
+  
+
+
+  <div class="excerpt">
+  
+    <p>最近在使用python的过程中，遇到了下面这种情况：</p>
+<p>A和B两个模块，我希望有一个共同的命名空间(假设为N)，用如N.A和N.B的方式来使用。注意，A和B是分开部署的（采用setup的方式安装部署），并且不希望通过把代码部署到一起（比如都放在N目录下）来实现这一点。</p>
+<p>为了能实现这一点，我进行了一些尝试：</p>
+<p>一开始，直接单独建立了两个模块N.A和N.B，然后都安装，发现两个模块只有一个能import成功，另外一个找不到。只要删除掉另外一个，这一个模块就一定可以import成功。反复尝试都是这样，于是我想之前的共用命名空间的想法是实现不了了。<br>
+  
+  <a href="/2013/05/21/implement-of-namespace-package-in-python/">
+    more
+  </a>
+  </div>
+  <div class="index-meta">
+    
+<time datetime="2013-05-21T07:25:00.000Z" itemprop="datePublished">
+  <i class="fa fa-calendar"></i>&nbsp;
+  05-21
+</time>
+
+
+
+    
+    &nbsp;
+    <i class="fa fa-tag"></i>&nbsp;
+    <a href="/categories/技术点滴/">技术点滴</a>
+
+
+
+
+    
+    &nbsp;
+    <i class="fa fa-tag"></i>&nbsp;
+    <a href="/tags/python/">python</a>
+
+
+  </div>
+</li>
+</div>
+<hr>
+
+
+
+
+  
+    
+<div>
+<li class="post-item">
+  
+  
+    <h1 class="index-title">
+        <a href="/2013/05/21/error-of-php-after-setup-phpredis-extension/">
+            安装phpredis后PHP出错问题解决
+        </a>
+    </h1>
+  
+
+
+  <div class="excerpt">
+  
+    前几天升级了一下虚拟机上PHP的版本，今天发现phpredis这个扩展忘了升级了，于是下载源代码，编译，安装。
+运行程序却发现出现了一个错误：1PHP Warning:  PHP Startup: Unable to load dynami
+  
+  <a href="/2013/05/21/error-of-php-after-setup-phpredis-extension/">
+    more
+  </a>
+  </div>
+  <div class="index-meta">
+    
+<time datetime="2013-05-21T07:17:00.000Z" itemprop="datePublished">
+  <i class="fa fa-calendar"></i>&nbsp;
+  05-21
+</time>
+
+
+
+    
+    &nbsp;
+    <i class="fa fa-tag"></i>&nbsp;
+    <a href="/categories/技术点滴/">技术点滴</a>
+
+
+
+
+    
+    &nbsp;
+    <i class="fa fa-tag"></i>&nbsp;
+    <a href="/tags/php/">php</a>
+
+
+  </div>
+</li>
+</div>
+<hr>
+
+
+
+
+  
+    
+<div>
+<li class="post-item">
+  
+  
+    <h1 class="index-title">
+        <a href="/2013/05/21/slove-the-error-when-setup-python-mcrypt-on-freebsd/">
+            FreeBSD上安装python-mcrypt出错问题解决
+        </a>
+    </h1>
+  
+
+
+  <div class="excerpt">
+  
+    <p>由于需要用到一些加密的东东，打算试一下mcrypt这个库，看到python已经有了一个扩展python-mcrypt，于是打算装上试试。</p>
+<p>使用pip安装：<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">pip install python-mcrypt</div></pre></td></tr></table></figure></p>
+<p>但是，发现居然安装时报编译错误，仔细看了下错误信息，原来是没有找到mcrypt.h这个文件。但是其实这个文件是存在的，在目录/usr/local/include下，看来这个目录并非编译时查找的默认目录，于是修改了一下python-mcrypt包的setup.py文件，增加文件中Extension类构造函数的如下两个参数：<br>
+  
+  <a href="/2013/05/21/slove-the-error-when-setup-python-mcrypt-on-freebsd/">
+    more
+  </a>
+  </div>
+  <div class="index-meta">
+    
+<time datetime="2013-05-21T07:07:00.000Z" itemprop="datePublished">
+  <i class="fa fa-calendar"></i>&nbsp;
+  05-21
+</time>
+
+
+
+    
+    &nbsp;
+    <i class="fa fa-tag"></i>&nbsp;
+    <a href="/categories/技术点滴/">技术点滴</a>
+
+
+
+
+    
+    &nbsp;
+    <i class="fa fa-tag"></i>&nbsp;
+    <a href="/tags/python/">python</a>·<a href="/tags/freebds/">freebds</a>·<a href="/tags/python-mcrypt/">python-mcrypt</a>·<a href="/tags/mcrypt/">mcrypt</a>
+
+
+  </div>
+</li>
+</div>
+<hr>
+
+
+
+
+  
+    
+<div>
+<li class="post-item">
+  
+  
+    <h1 class="index-title">
+        <a href="/2013/05/21/fedora-17xi-tong-shuang-xian-qia-bi-ji-ben-zhong-guan-bi-bu-yong-de-du-xian-de-jian-dan-fang-fa/">
+            Fedora 17系统双显卡笔记本中关闭不用的独显的简单方法
+        </a>
+    </h1>
+  
+
+
+  <div class="excerpt">
+  
+    <p>在终端中输入：<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">cat /sys/kernel/debug/vgaswitcheroo/switch</div></pre></td></tr></table></figure></p>
+<p>输出如下：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">0:DIS: :Pwr:0000:01:00.0</div><div class="line">1:IGD:+:Pwr:0000:00:02.0</div></pre></td></tr></table></figure></p>
+<p>其中“IGD”表示集成显卡，“DIS”表示独立显卡；加号（“+”）表示当前用作输出（或称“连接上”（connected））的显卡；“Pwr”代表正在供电，“Off”代表已关闭。如果看到两个显卡都显示“Pwr”，则说明都在消耗着电能。<br>
+  
+  <a href="/2013/05/21/fedora-17xi-tong-shuang-xian-qia-bi-ji-ben-zhong-guan-bi-bu-yong-de-du-xian-de-jian-dan-fang-fa/">
+    more
+  </a>
+  </div>
+  <div class="index-meta">
+    
+<time datetime="2013-05-21T07:01:00.000Z" itemprop="datePublished">
+  <i class="fa fa-calendar"></i>&nbsp;
+  05-21
+</time>
+
+
+
+    
+    &nbsp;
+    <i class="fa fa-tag"></i>&nbsp;
+    <a href="/categories/技术点滴/">技术点滴</a>
+
+
+
+
+    
+    &nbsp;
+    <i class="fa fa-tag"></i>&nbsp;
+    <a href="/tags/linux/">linux</a>·<a href="/tags/fedora/">fedora</a>·<a href="/tags/双显卡/">双显卡</a>
+
+
+  </div>
+</li>
+</div>
+<hr>
+
+
+
+
+  
+    
+<div>
+<li class="post-item">
+  
+  
+    <h1 class="index-title">
+        <a href="/2013/05/21/practices-of-an-agile-developer-reading-notes-2/">
+            《高效程序员的45个习惯》读书笔记-2
+        </a>
+    </h1>
+  
+
+
+  <div class="excerpt">
+  
+    <p>态度决定一切。</p>
+<p>专注于真正的目标，集中精力，你是为了做事而工作。</p>
+<p>项目压力会迫使你走捷径，只看眼前利益，但是欲速则不达。</p>
+<p>更专业的去处理问题，对事不对人，就事论事的讨论问题会让工作更有效。</p>
+<p>反馈是敏捷的基础，当你意识到走错了方向，就要立即作出决策，改变方向。你需要有勇气去排除万难，奋勇前进，<br>
+  
+  <a href="/2013/05/21/practices-of-an-agile-developer-reading-notes-2/">
+    more
+  </a>
+  </div>
+  <div class="index-meta">
+    
+<time datetime="2013-05-21T06:54:00.000Z" itemprop="datePublished">
+  <i class="fa fa-calendar"></i>&nbsp;
+  05-21
+</time>
+
+
+
+    
+    &nbsp;
+    <i class="fa fa-tag"></i>&nbsp;
+    <a href="/categories/读书笔记/">读书笔记</a>
+
+
+
+
+    
+    &nbsp;
+    <i class="fa fa-tag"></i>&nbsp;
+    <a href="/tags/敏捷开发/">敏捷开发</a>
+
+
+  </div>
+</li>
+</div>
+<hr>
+
+
+
+
+  
+    
+<div>
+<li class="post-item">
+  
+  
+    <h1 class="index-title">
+        <a href="/2013/05/21/practices-of-an-agile-developer-reading-notes-1/">
+            《高效程序员的45个习惯》读书笔记-1
+        </a>
+    </h1>
+  
+
+
+  <div class="excerpt">
+  
+    <p>敏捷开发：一种把以人为本、团队合作、快速响应变化和可工作的软件作为宗旨的开发方法。</p>
+<p>一句话对敏捷的精辟概括：敏捷开发就是在一个高度协作的环境中，不断地使用反馈进行自我调整和完善。</p>
+<p>敏捷工具箱：Wiki，版本控制，单元测试，自动构建。<br>
+  
+  <a href="/2013/05/21/practices-of-an-agile-developer-reading-notes-1/">
+    more
+  </a>
+  </div>
+  <div class="index-meta">
+    
+<time datetime="2013-05-21T06:49:00.000Z" itemprop="datePublished">
+  <i class="fa fa-calendar"></i>&nbsp;
+  05-21
+</time>
+
+
+
+    
+    &nbsp;
+    <i class="fa fa-tag"></i>&nbsp;
+    <a href="/categories/读书笔记/">读书笔记</a>
+
+
+
+
+    
+    &nbsp;
+    <i class="fa fa-tag"></i>&nbsp;
+    <a href="/tags/敏捷开发/">敏捷开发</a>
+
+
+  </div>
+</li>
+</div>
+<hr>
+
+
+
+
+  
+</ul>
+<ul class="pager">
+    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="extend next" rel="next" href="/page/2/">Next</a>
+</ul>
+
+
+    </div>
+  </div>
+  <footer class="page-footer"><div class="clearfix">
+</div>
+<div class="right-foot container">
+    <div class="firstrow">
+        <a href="#top" >
+        <i class="fa fa-arrow-right"></i>
+        </a>
+        © Free Fly 2005-2083
+    </div>
+    <div class="secondrow">
+        <a href="https://marshalys.github.io/">
+        Mars Yuan
+        </a>
+    </div>
+</div>
+<div class="clearfix">
+</div>
+</footer>
+  <script src="//cdn.bootcss.com/jquery/2.2.1/jquery.min.js"></script>
+<script src="/js/search.js"></script>
+<script type="text/javascript">
+
+// comments below to disable loading animation
+function revealOnScroll() {
+  var scrolled = $(window).scrollTop();
+  $(".excerpt, .index-title, .index-meta, p").each(function() {
+    var current = $(this),
+      height = $(window).outerHeight(),
+      offsetTop = current.offset().top;
+    (scrolled + height + 50 > offsetTop) ? current.addClass("animation"):'';
+  });
+}
+$(window).on("scroll", revealOnScroll);
+$(document).ready(revealOnScroll)
+
+// disqus scripts
+
+
+// dropdown scripts
+$(".dropdown").click(function(event) {
+  var current = $(this);
+  event.stopPropagation();
+  $(current).children(".dropdown-content")[($(current).children(".dropdown-content").hasClass("open"))?'removeClass':'addClass']("open")
+});
+$(document).click(function(){
+    $(".dropdown-content").removeClass("open");
+})
+
+// back to top scripts
+$("a[href='#top']").click(function() {
+  $("html, body").animate({ scrollTop: 0 }, 500);
+  return false;
+});
+
+
+var path = "/search.xml";
+searchFunc(path, 'local-search-input', 'local-search-result');
+
+</script>
+
+</body>
+</html>

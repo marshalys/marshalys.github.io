@@ -1,0 +1,198 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="google-site-verification" content="" />
+  
+  <title>FreeBSD下安装和部署Review Board</title>
+  <meta name="author" content="Mars Yuan">
+   <meta name="description" content="Review Board官网：http://www.reviewboard.org
+服务器环境：操作系统是FreeBSD 8.2版本
+具体步骤：
+1、安装Review Board12cd /usr/ports/www/reviewboardmake install
+2、安装memcached12cd /usr/ports/databases/memcachedmake install">
+  
+
+  <meta property="og:title" content="FreeBSD下安装和部署Review Board"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta property="og:site_name" content="Mars Yuan&#39;s Blog"/>
+ <meta property="og:image" content="undefined"/>
+  
+  <link href="/apple-touch-icon-precomposed.png" sizes="180x180" rel="apple-touch-icon-precomposed">
+  <link rel="alternate" href="/atom.xml" title="Mars Yuan&#39;s Blog" type="application/atom+xml">
+  <link rel="stylesheet" href="//cdn.bootcss.com/bootstrap/3.3.6/css/bootstrap.min.css">
+  <link rel="stylesheet" href="//cdn.bootcss.com/font-awesome/4.5.0/css/font-awesome.min.css">
+  <link rel="stylesheet" href="/css/m.min.css">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+</head>
+
+<body>
+  <div id="main">
+    <div class="behind">
+      <div class="back">
+        <a href="/" class="black-color"><i class="fa fa-times" aria-hidden="true"></i></a>
+      </div>
+      <div class="description">
+        &nbsp;Free Fly
+      </div>
+    </div>
+    <div class="container">
+      
+
+  <article class="standard post">
+    <div class="title">
+      
+  
+    <h1 class="page-title center">
+        FreeBSD下安装和部署Review Board
+    </h1>
+  
+
+
+    </div>
+    <div class="meta center">
+      
+<time datetime="2013-05-20T12:25:00.000Z">
+  <i class="fa fa-calendar"></i>&nbsp;
+  2013-05-20
+</time>
+
+
+
+    
+    &nbsp;
+    <i class="fa fa-tag"></i>&nbsp;
+    <a href="/categories/技术点滴/">技术点滴</a>
+
+
+
+
+    
+    &nbsp;
+    <i class="fa fa-tag"></i>&nbsp;
+    <a href="/tags/python/">python</a>·<a href="/tags/freebsd/">freebsd</a>·<a href="/tags/code-review/">code review</a>·<a href="/tags/开源/">开源</a>
+
+
+    </div>
+    <hr>
+    <div class="picture-container">
+      
+    </div>
+    <p>Review Board官网：<a href="http://www.reviewboard.org" target="_blank" rel="external">http://www.reviewboard.org</a></p>
+<p>服务器环境：操作系统是FreeBSD 8.2版本</p>
+<p>具体步骤：</p>
+<p>1、安装Review Board<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">cd /usr/ports/www/reviewboard</div><div class="line">make install</div></pre></td></tr></table></figure></p>
+<p>2、安装memcached<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">cd /usr/ports/databases/memcached</div><div class="line">make install</div></pre></td></tr></table></figure></p>
+<a id="more"></a>    
+<p>3、安装MySQL Server<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">    cd /usr/ports/databases/mysql55-server</div><div class="line">    make install</div><div class="line">```    </div><div class="line">4、安装nginx</div></pre></td></tr></table></figure></p>
+<pre><code>cd /usr/ports/www/nginx
+make install
+</code></pre><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">5、创建一个Review Board站点</div></pre></td></tr></table></figure>
+<pre><code>rb-site install /usr/local/www/reviewboard
+</code></pre><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">然后按照提示输入站点相关信息。</div><div class="line"></div><div class="line">6、在nginx配置文件中配置Review Board</div><div class="line"></div><div class="line">在server配置中加入：</div></pre></td></tr></table></figure>
+<pre><code>root /usr/local/www/reviewboard/htdocs/;
+
+location /media {
+    root /usr/local/www/reviewboard/htdocs;
+}
+location /errordoc {
+    root /usr/local/www/reviewboard/htdocs;
+}
+
+location / {
+    # host and port to fastcgi server
+    fastcgi_pass 127.0.0.1:3033;
+    fastcgi_param PATH_INFO $fastcgi_script_name;
+    fastcgi_param REQUEST_METHOD $request_method;
+    fastcgi_param QUERY_STRING $query_string;
+    fastcgi_param CONTENT_TYPE $content_type;
+    fastcgi_param CONTENT_LENGTH $content_length;
+    fastcgi_pass_header Authorization;
+    fastcgi_intercept_errors off;
+    include        fastcgi_params;
+}
+</code></pre><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">7、启动Review Board：</div></pre></td></tr></table></figure>
+<pre><code>rb-site manage /usr/local/www/reviewboard runfcgi method=threaded port=3033 host=127.0.0.1 protocol=fcgi
+</code></pre><p>```</p>
+
+
+  </article>
+  </script>
+    <script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+  </script>
+  <div class="busuanzi center">
+    page PV:&nbsp;<span id="busuanzi_value_page_pv"></span>&nbsp;・&nbsp;
+    site PV:&nbsp;<span id="busuanzi_value_site_pv"></span>&nbsp;・&nbsp;
+    site UV:&nbsp;<span id="busuanzi_value_site_uv"></span>
+  </div>
+
+
+
+
+    </div>
+  </div>
+  <footer class="page-footer"><div class="clearfix">
+</div>
+<div class="right-foot container">
+    <div class="firstrow">
+        <a href="#top" >
+        <i class="fa fa-arrow-right"></i>
+        </a>
+        © Free Fly 2005-2083
+    </div>
+    <div class="secondrow">
+        <a href="https://marshalys.github.io/">
+        Mars Yuan
+        </a>
+    </div>
+</div>
+<div class="clearfix">
+</div>
+</footer>
+  <script src="//cdn.bootcss.com/jquery/2.2.1/jquery.min.js"></script>
+<script src="/js/search.js"></script>
+<script type="text/javascript">
+
+// comments below to disable loading animation
+function revealOnScroll() {
+  var scrolled = $(window).scrollTop();
+  $(".excerpt, .index-title, .index-meta, p").each(function() {
+    var current = $(this),
+      height = $(window).outerHeight(),
+      offsetTop = current.offset().top;
+    (scrolled + height + 50 > offsetTop) ? current.addClass("animation"):'';
+  });
+}
+$(window).on("scroll", revealOnScroll);
+$(document).ready(revealOnScroll)
+
+// disqus scripts
+
+
+// dropdown scripts
+$(".dropdown").click(function(event) {
+  var current = $(this);
+  event.stopPropagation();
+  $(current).children(".dropdown-content")[($(current).children(".dropdown-content").hasClass("open"))?'removeClass':'addClass']("open")
+});
+$(document).click(function(){
+    $(".dropdown-content").removeClass("open");
+})
+
+// back to top scripts
+$("a[href='#top']").click(function() {
+  $("html, body").animate({ scrollTop: 0 }, 500);
+  return false;
+});
+
+
+var path = "/search.xml";
+searchFunc(path, 'local-search-input', 'local-search-result');
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="utf-8"?>
+<search>
+  
+  
+    
+    <entry>
+      <title><![CDATA[Python中使用带参数Decorator不加括号时出现错误解决]]></title>
+      <url>http://marshalys.github.io/2014/01/02/pythonzhong-shi-yong-dai-can-shu-decoratorbu-jia-gua-hao-shi-chu-xian-cuo-wu-jie-jue/</url>
+      <content type="html"><![CDATA[<p>最进使用Django开发网站，有用到ajax的地方，封装了一个Decorator用于将服务器返回数据接口统一为JSON格式，代码类似与：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">json_service</span><span class="params">(func)</span>:</span></div><div class="line"><span class="meta">    @wraps(func)</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">_fn</span><span class="params">(*args, **kwargs)</span>:</span></div><div class="line">        result = func(*args, **kwargs)</div><div class="line">        content = json.dumps(result, cls=DjangoJSONEncoder)</div><div class="line">        <span class="keyword">return</span> HttpResponse(content, content_type=<span class="string">'application/json'</span>)</div><div class="line">    <span class="keyword">return</span> _fn</div></pre></td></tr></table></figure></p>
+<p>这样在view里面可以很简单的如下面这样调用：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="meta">@json_service</span></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">logon</span><span class="params">(request)</span>:</span></div><div class="line">    ...</div><div class="line"></div><div class="line"><span class="meta">@json_service</span></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">list</span><span class="params">(request)</span>:</span></div><div class="line">    ...</div></pre></td></tr></table></figure></p>
+<p>这样感觉是挺简介优雅的。不过很快就出现要对<code>json_service</code>进行修改的需求了，因为有些地方需要用户登录后才运行进行操作的，因此，这些ajax的接口必须加上权限相关的判断，最简单的就是判断下用户是否登录。<br><a id="more"></a><br>于是看了下Django的接口，发现自带一个<code>login_required</code>的Decorator，但是是用于页面的，不太适用于这种ajax请求，于是打算改造一下<code>json_service</code>增加一个参数用于判断这个ajax接口是否需要判断用户是否登录，<em>（其实再封装一个新的Decorator也未尝不可，只是觉得那样代码写起来可能有些累赘）</em>，于是修改了下<code>json_service</code>：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">json_service</span><span class="params">(need_logon=False)</span>:</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">decorator</span><span class="params">(func)</span>:</span></div><div class="line"><span class="meta">        @wraps(func)</span></div><div class="line">        <span class="function"><span class="keyword">def</span> <span class="title">_fn</span><span class="params">(request, *args, **kwargs)</span>:</span></div><div class="line">            <span class="keyword">if</span> need_logon <span class="keyword">and</span> <span class="keyword">not</span> request.user.is_authenticated():</div><div class="line">                result = fail(_(<span class="string">'need logon, please refresh page and retry.'</span>))</div><div class="line">            <span class="keyword">else</span>:</div><div class="line">                result = func(request, *args, **kwargs)</div><div class="line">            content = json.dumps(result, cls=DjangoJSONEncoder)</div><div class="line">            <span class="keyword">return</span> HttpResponse(content, content_type=<span class="string">'application/json'</span>)</div><div class="line">        <span class="keyword">return</span> _fn</div><div class="line">    <span class="keyword">return</span> decorator</div></pre></td></tr></table></figure></p>
+<p>同时将原来view里面的代码稍稍修改：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="meta">@json_service(need_logon=True)</span></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">logon</span><span class="params">(request)</span>:</span></div><div class="line">    ...</div><div class="line"></div><div class="line"><span class="meta">@json_service</span></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">list</span><span class="params">(request)</span>:</span></div><div class="line">    ...</div></pre></td></tr></table></figure></p>
+<p>便以为大工告成了。结果，<code>logon</code>这个接口一切正常，<code>list</code>这个接口确出错了。</p>
+<p>其实这个问题，我以前也遇到过一次，后来通过加括号把<code>@json_service</code>改为<code>@json_service()</code>解决了，这个是跟Decorator本身机制有关，简单说来Decorator的机制可以如下理解<em>（参考：<a href="http://www.python.org/dev/peps/pep-0318/" target="_blank" rel="external">pep-0318</a>）</em>：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="meta">@dec2</span></div><div class="line"><span class="meta">@dec1</span></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">func</span><span class="params">(arg1, arg2, ...)</span>:</span></div><div class="line">    <span class="keyword">pass</span></div></pre></td></tr></table></figure></p>
+<p>等价于：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">func</span><span class="params">(arg1, arg2, ...)</span>:</span></div><div class="line">    <span class="keyword">pass</span></div><div class="line">func = dec2(dec1(func))</div></pre></td></tr></table></figure></p>
+<p>而<br><figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line"><span class="meta">@decomaker(argA, argB, ...)</span></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">func</span><span class="params">(arg1, arg2, ...)</span>:</span></div><div class="line">    <span class="keyword">pass</span></div></pre></td></tr></table></figure></p>
+<p>等价于：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">func = decomaker(argA, argB, ...)(func)</div></pre></td></tr></table></figure></p>
+<p>所以如果不加括号的话就会出问题。</p>
+<p>本来觉得加括号就加括号吧，也没啥，但是之前查API时看到Django的那个<code>login_required</code>了，貌似人家那个带参数的就可以不带括号写。于是研究了下Django的机制，最后改造了一个可以不带括号写的版本：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">_json_service_decorator</span><span class="params">(need_logon)</span>:</span></div><div class="line">    <span class="function"><span class="keyword">def</span> <span class="title">decorator</span><span class="params">(func)</span>:</span></div><div class="line"><span class="meta">        @wraps(func)</span></div><div class="line">        <span class="function"><span class="keyword">def</span> <span class="title">_fn</span><span class="params">(request, *args, **kwargs)</span>:</span></div><div class="line">            <span class="keyword">if</span> need_logon <span class="keyword">and</span> <span class="keyword">not</span> request.user.is_authenticated():</div><div class="line">                result = fail(_(<span class="string">'need logon, please refresh page and retry.'</span>))</div><div class="line">            <span class="keyword">else</span>:</div><div class="line">                result = func(request, *args, **kwargs)</div><div class="line">            content = json.dumps(result, cls=DjangoJSONEncoder)</div><div class="line">            <span class="keyword">return</span> HttpResponse(content, content_type=<span class="string">'application/json'</span>)</div><div class="line">        <span class="keyword">return</span> _fn</div><div class="line">    <span class="keyword">return</span> decorator</div><div class="line"></div><div class="line"></div><div class="line"><span class="function"><span class="keyword">def</span> <span class="title">json_service</span><span class="params">(function=None, need_logon=True)</span>:</span></div><div class="line">    decorator = _json_service_decorator(need_logon)</div><div class="line">    <span class="keyword">if</span> function:</div><div class="line">        <span class="keyword">return</span> decorator(function)</div><div class="line">    <span class="keyword">return</span> decorator</div></pre></td></tr></table></figure></p>
+<p>嗯，终于搞定了。</p>
+<p>最后不得不感叹两句：</p>
+<ol>
+<li>Python机制真是挺灵活！</li>
+<li>开源就是好！</li>
+</ol>
+]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[Android SDK安装]]></title>
+      <url>http://marshalys.github.io/2013/07/07/android-sdk-setup-error/</url>
+      <content type="html"><![CDATA[<p>今天尝试了一下安装android sdk，发现还是挺折腾的，于是记录一下：</p>
+<p>首先在<a href="http://developer.android.com/sdk/index.html" target="_blank" rel="external">android SDK页面</a>页面下在sdk包（我选的是不跟ADT绑定的）。这个过程还挺顺利，很快就把100多M的压缩包下载好了。</p>
+<p>然后，我打开我的idea12，打算新建一个android工程试试，发现需要指定sdk目录，于是设置好，却发现指向失败了，提示”can’t find any android targets”，于是查了一些资料，发现自己目前完全没有搞清楚这个sdk是怎么用的：下载完这个基本的sdk压缩包其实只是很少的一部分，后续还需要安装各种安卓版本相关的包，需要通过tools/android来进行管理。<br><a id="more"></a></p>
+<p>需要下载的东西好多啊，在经历了n次网络超时错误后（主要是由于GFW的干扰），终于貌似把相关的包都安装上了。</p>
+<p>于是赶紧去运行一个例子试试，悲剧的发现在运行adb时还有错误：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">/lib/ld-linux.so.2: bad ELF interpreter: No such file or directory</div></pre></td></tr></table></figure></p>
+<p>还好有google，搜了一下，貌似由于我电脑是64位系统造成的，解决方案：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">sudo yum install libstdc++.i686</div><div class="line">sudo yum install ncurses-libs.i686</div><div class="line">sudo yum install zlib.i686</div></pre></td></tr></table></figure></p>
+<p>于是就OK了。<br>接下来可以试试Android开发啦:)</p>
+]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[discuz模版缓存清理]]></title>
+      <url>http://marshalys.github.io/2013/05/21/discuzmo-ban-huan-cun-qing-li/</url>
+      <content type="html"><![CDATA[<p>同事把论坛换了一台服务器，发现页面内容全乱了，向我求救。于是去看了一下，发现页面输出貌似有php代码，原来discuz用了短标签，于是让同事调整php.ini的设置，允许端标签使用<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">short_open_tag=On</div></pre></td></tr></table></figure></p>
+<p>修改后重启php，发现页面仍然是乱码。这下郁闷了，只好去看discuz的代码（好乱！）。经过各种尝试，最终发现是模版缓存的原因，清除forumdata/templates目录下文件后刷新页面，终于OK了。</p>
+]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[python使用thrift中文编码问题解决]]></title>
+      <url>http://marshalys.github.io/2013/05/21/chinese-char-encode-problem-of-thrift-in-python/</url>
+      <content type="html"><![CDATA[<p>使用thrift（版本0.9.0，客户端、服务器端皆为python），过程中遇到了中文编码问题。string类型的值如果有中文会出现异常。网上查了一下，发现了一些有价值的信息，其中有说在0.9.0时生成代码加上utf8strings选项就可以解决此问题。于是马上去试了一下，发现问题依然存在。决定还是老老实实看一下代码，进过各种折腾，最终还是搞定了这个问题。</p>
+<p>原来是因为我用了fastbinary这个扩展，而在0.9.0中这个扩展并没有支持uft8字符串。于是参考了网上一些解决方案的补丁，修改了fastbinary.c文件。用这个代码重新安装python的thrift库后问题解决。<br><a id="more"></a><br>最终我是通过加上utf8strings选项同时修改了fastbinary.c的代码来搞定了这个问题。</p>
+<p>下面附上修改后的代码片段。</p>
+<p>fastbinary.c<br><figure class="highlight c"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">case</span> T_STRING: &#123;</div><div class="line">    PyObject* utf8_str_val = <span class="literal">NULL</span>;</div><div class="line"></div><div class="line">     <span class="keyword">if</span> (value-&gt;ob_type == &amp;PyUnicode_Type) &#123;</div><div class="line">          utf8_str_val = PyUnicode_AsUTF8String(value);</div><div class="line">          <span class="keyword">if</span> (utf8_str_val == <span class="literal">NULL</span>) &#123;</div><div class="line">               <span class="keyword">return</span> <span class="literal">false</span>;</div><div class="line">          &#125;</div><div class="line">     &#125;</div><div class="line"></div><div class="line">     PyObject* str_val = utf8_str_val == <span class="literal">NULL</span> ? value : utf8_str_val;</div><div class="line">     Py_ssize_t len = PyString_Size(str_val);</div><div class="line"></div><div class="line">    <span class="keyword">if</span> (!check_ssize_t_32(len)) &#123;</div><div class="line">      <span class="keyword">return</span> <span class="literal">false</span>;</div><div class="line">    &#125;</div><div class="line"></div><div class="line">    writeI32(output, (<span class="keyword">int32_t</span>) len);</div><div class="line">    PycStringIO-&gt;cwrite(output, PyString_AsString(str_val), (<span class="keyword">int32_t</span>) len);</div><div class="line"></div><div class="line">     Py_XDECREF(utf8_str_val)</div><div class="line">    <span class="keyword">break</span>;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>另，参考的网上资料如下，感谢！</p>
+<p><a href="https://github.com/originell/thrift" target="_blank" rel="external">https://github.com/originell/thrift</a></p>
+<p><a href="https://issues.apache.org/jira/browse/THRIFT-1460" target="_blank" rel="external">https://issues.apache.org/jira/browse/THRIFT-1460</a></p>
+<p><a href="https://issues.apache.org/jira/browse/THRIFT-395" target="_blank" rel="external">https://issues.apache.org/jira/browse/THRIFT-395</a></p>
+]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[python的namespace package实现方式]]></title>
+      <url>http://marshalys.github.io/2013/05/21/implement-of-namespace-package-in-python/</url>
+      <content type="html"><![CDATA[<p>最近在使用python的过程中，遇到了下面这种情况：</p>
+<p>A和B两个模块，我希望有一个共同的命名空间(假设为N)，用如N.A和N.B的方式来使用。注意，A和B是分开部署的（采用setup的方式安装部署），并且不希望通过把代码部署到一起（比如都放在N目录下）来实现这一点。</p>
+<p>为了能实现这一点，我进行了一些尝试：</p>
+<p>一开始，直接单独建立了两个模块N.A和N.B，然后都安装，发现两个模块只有一个能import成功，另外一个找不到。只要删除掉另外一个，这一个模块就一定可以import成功。反复尝试都是这样，于是我想之前的共用命名空间的想法是实现不了了。<br><a id="more"></a><br>后来，突然想到，flask里面的ext貌似就是这个样子的，那些插件都是单独部署，且都在flask.ext这个命名空间下。于是立马去看了看flask的实现方式，发现他采用了一种import hook的机制来实现的（该机制请见PEP 302 <a href="http://www.python.org/dev/peps/pep-0302/" target="_blank" rel="external">http://www.python.org/dev/peps/pep-0302/</a> ），具体的过程就是在<code>import flask.ext</code>这个模块的时候，调整了这个模块的import的过程，会去搜索使用了<code>flask_</code>或者<code>flaskext</code>前缀模块，比如<code>import flask.ext.sqlalchemy</code>实际会去<code>import flask_sqlalchemy</code>这个模块。于是我去实验了一下这种方式，确实可行，于是打算采用这种方式去组织代码结构了。只是觉得这样一个模块有两种import方式，稍微有些不舒服。</p>
+<p>这天，在看setuptools的文档，突然发现他有一个叫namespace_packages的参数，我突然意识到这可能会跟我想要的那种共用命名空间的想法有关系，于是顺藤摸瓜，发现了这个：PEP 382 – Namespace Packages（ <a href="http://www.python.org/dev/peps/pep-0382/" target="_blank" rel="external">http://www.python.org/dev/peps/pep-0382/</a> ），呵呵，我的这个需求原来早就有人有了，最终决定采用如下方式：</p>
+<p>建立一个单独的N模块，在其<strong>init</strong>.py中放入如下代码：<br><figure class="highlight py"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">from</span> pkgutil <span class="keyword">import</span> extend_path</div><div class="line">__path__ = extend_path(__path__, __name__)</div></pre></td></tr></table></figure></p>
+]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[安装phpredis后PHP出错问题解决]]></title>
+      <url>http://marshalys.github.io/2013/05/21/error-of-php-after-setup-phpredis-extension/</url>
+      <content type="html"><![CDATA[<p>前几天升级了一下虚拟机上PHP的版本，今天发现phpredis这个扩展忘了升级了，于是下载源代码，编译，安装。</p>
+<p>运行程序却发现出现了一个错误：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">PHP Warning:  PHP Startup: Unable to load dynamic library &apos;/usr/local/lib/php/20100525/redis.so&apos; - /usr/local/lib/php/20100525/redis.so: Undefined symbol &quot;ps_globals&quot; in Unknown on line 0</div></pre></td></tr></table></figure></p>
+<p>问题很奇怪，在google上找了一会，终于找到了原因，原来是phpredis跟session扩展有一定耦合关系，需要先加载session.so再加载redis.so就没有问题了，于是修改了extensions.ini中各扩展文件顺序，就ok了。</p>
+]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[FreeBSD上安装python-mcrypt出错问题解决]]></title>
+      <url>http://marshalys.github.io/2013/05/21/slove-the-error-when-setup-python-mcrypt-on-freebsd/</url>
+      <content type="html"><![CDATA[<p>由于需要用到一些加密的东东，打算试一下mcrypt这个库，看到python已经有了一个扩展python-mcrypt，于是打算装上试试。</p>
+<p>使用pip安装：<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">pip install python-mcrypt</div></pre></td></tr></table></figure></p>
+<p>但是，发现居然安装时报编译错误，仔细看了下错误信息，原来是没有找到mcrypt.h这个文件。但是其实这个文件是存在的，在目录/usr/local/include下，看来这个目录并非编译时查找的默认目录，于是修改了一下python-mcrypt包的setup.py文件，增加文件中Extension类构造函数的如下两个参数：<br><a id="more"></a><br><figure class="highlight py"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">include_dirs=[<span class="string">"/usr/local/include"</span>],</div><div class="line">library_dirs=[<span class="string">"/usr/local/lib"</span>],</div></pre></td></tr></table></figure></p>
+<p>再手动安装：<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">python setup.py install</div></pre></td></tr></table></figure></p>
+<p>就ok了。</p>
+]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[Fedora 17系统双显卡笔记本中关闭不用的独显的简单方法]]></title>
+      <url>http://marshalys.github.io/2013/05/21/fedora-17xi-tong-shuang-xian-qia-bi-ji-ben-zhong-guan-bi-bu-yong-de-du-xian-de-jian-dan-fang-fa/</url>
+      <content type="html"><![CDATA[<p>在终端中输入：<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">cat /sys/kernel/debug/vgaswitcheroo/switch</div></pre></td></tr></table></figure></p>
+<p>输出如下：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">0:DIS: :Pwr:0000:01:00.0</div><div class="line">1:IGD:+:Pwr:0000:00:02.0</div></pre></td></tr></table></figure></p>
+<p>其中“IGD”表示集成显卡，“DIS”表示独立显卡；加号（“+”）表示当前用作输出（或称“连接上”（connected））的显卡；“Pwr”代表正在供电，“Off”代表已关闭。如果看到两个显卡都显示“Pwr”，则说明都在消耗着电能。<br><a id="more"></a><br>临时关闭某一显卡（重启后失效）：<br><figure class="highlight sh"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">su</div><div class="line"><span class="built_in">echo</span> OFF &gt; /sys/kernel/debug/vgaswitcheroo/switch</div></pre></td></tr></table></figure></p>
+<p>这时再看以下显卡的运行情况：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">0:DIS: :Off:0000:01:00.0</div><div class="line">1:IGD:+:Pwr:0000:00:02.0</div></pre></td></tr></table></figure></p>
+<p>呵呵，可以看到没有被使用的独立显卡电源已经被关闭了。</p>
+<p>另外切换显卡也可用此法，将OFF替换为IGD或者DIS就可。</p>
+]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[《高效程序员的45个习惯》读书笔记-2]]></title>
+      <url>http://marshalys.github.io/2013/05/21/practices-of-an-agile-developer-reading-notes-2/</url>
+      <content type="html"><![CDATA[<p>态度决定一切。</p>
+<p>专注于真正的目标，集中精力，你是为了做事而工作。</p>
+<p>项目压力会迫使你走捷径，只看眼前利益，但是欲速则不达。</p>
+<p>更专业的去处理问题，对事不对人，就事论事的讨论问题会让工作更有效。</p>
+<p>反馈是敏捷的基础，当你意识到走错了方向，就要立即作出决策，改变方向。你需要有勇气去排除万难，奋勇前进，<br><a id="more"></a><br>不要去做快速修复，在你并不理解一块代码是如何工作的时候，你快速修复可能只是解决了表面问题，而掩盖了真正的问题，可能最终引发大问题。</p>
+<p>防止代码难懂的技术：1、代码审查；2、单元测试。</p>
+<p>帮助团队技术决策的有效特殊技术：1、设定最终期限；2、逆向思维；3、设立仲裁人；4、支持已经做出的决定。</p>
+]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[《高效程序员的45个习惯》读书笔记-1]]></title>
+      <url>http://marshalys.github.io/2013/05/21/practices-of-an-agile-developer-reading-notes-1/</url>
+      <content type="html"><![CDATA[<p>敏捷开发：一种把以人为本、团队合作、快速响应变化和可工作的软件作为宗旨的开发方法。</p>
+<p>一句话对敏捷的精辟概括：敏捷开发就是在一个高度协作的环境中，不断地使用反馈进行自我调整和完善。</p>
+<p>敏捷工具箱：Wiki，版本控制，单元测试，自动构建。<br><a id="more"></a><br>敏捷团队的每一个人都需具备职业精神，专业的工作态度——尽最大可能做好自己的工作，并积极期望项目能获得成功。</p>
+<p>持续进步，养成良好的习惯。</p>
+]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[Flask-SQLAlchemy的SQLALCHEMY_DATABASE_URI中密码有特殊字符的处理办法]]></title>
+      <url>http://marshalys.github.io/2013/05/21/flask-sqlalchemy-sqlalchemy-database-uri-special-char/</url>
+      <content type="html"><![CDATA[<p>今天中午，群里面有个哥们问了一个问题，他用的Flask-SQLAlchmey来做数据库访问，而数据库连接串配置项SQLALCHEMY_DATABASE_URI的格式为<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">mysql://username:password@server/db</div></pre></td></tr></table></figure></p>
+<p>这种的，由于他们的密码有个特殊字符@，这样如果直接把密码写在连接串的配置项中，就出问题了，连接出错。群里面几个热心人各种提议，未果，于是开始有人说：“密码搞什么特殊字符嘛，把密码改了吧！”。我觉得搞技术的人怎么能是这种心态呢？这也不是什么解决不了的难题，遇到问题就考虑逃避怎么行。虽然这一块我也不是很熟悉，但是这东东貌似开源的，于是决定去查一下。其实这个问题比较简单，查看了一下源代码，大概花了一刻钟，发现原来这个连接串密码可以是通过使用URL编码来处理特殊字符的，所以将密码用URL编码后问题就能解决了。</p>
+<p>最后不得不赞一下，开源确实好。</p>
+]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[mysql导入中文数据乱码问题解决]]></title>
+      <url>http://marshalys.github.io/2013/05/21/mysql-import-chinese-data-with-error/</url>
+      <content type="html"><![CDATA[<p>今天在服务器上用mysql导入数据，数据中有中文的，发现导进去是乱码。看了一下帮助，原来默认是使用latin1，所以需要设置一下编码：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># mysql --default-character-set=utf8  -uxxxuser --database=xxxxdb &lt; xxxxdata.sql</div></pre></td></tr></table></figure></p>
+<p>呵呵，然后就ok了。</p>
+<p>另外看了一下，还可以在my.cnf文件中的[client]段添加：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">default-character-set=utf8</div></pre></td></tr></table></figure></p>
+<p>设置，这样可以不用每次导数据都加上–default-character-set=utf8了。</p>
+]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[在Fedora上使用Virtualbox遇到Unable To Find The Sources Of Your Current Linux Kernel问题解决]]></title>
+      <url>http://marshalys.github.io/2013/05/21/setup-virtualbox-error-in-fedora/</url>
+      <content type="html"><![CDATA[<p>运行Virtualbox提示需要运行/etc/init.d/vboxdrv setup命令，于是就去运行这个命令，结果出错了，错误信息是：Unable To Find The Sources Of Your Current Linux Kernel，查了一些资料发现这个问题主要是由于没有kernel源代码造成的，需要安装kernel的源代码，于是：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># yum install gcc dkms kernel-devel</div></pre></td></tr></table></figure></p>
+<p>这样安装完成后就好了。</p>
+<p>另外需要注意，安装的kernel代码和正在运行的系统kernel是同一个版本的，否则还是会出错。我就遇到了版本不同的问题，新安装的源代码版本比较新，于是只好运行自动升级，把系统kernel的版本更新后就OK了。</p>
+]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[Fedora上安装KVM虚拟机]]></title>
+      <url>http://marshalys.github.io/2013/05/20/setup-kvm-in-fedora/</url>
+      <content type="html"><![CDATA[<p>这几天在笔记本上装了Fedora17用于今后开发办公，为了更好的隔离各种开放环境，于是打算安装虚拟机。原来在windows上用的多的是virtualbox，现在在linux上查了一下，貌似KVM比较好，于是打算安装一个试试。下面是安装过程：</p>
+<p>首先安装kvm包：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># yum install kvm</div></pre></td></tr></table></figure></p>
+<a id="more"></a>
+<p>然后安装了几个推荐的用于管理虚拟机的包：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"># yum install virt-manager libvirt libvirt-python python-virtinst</div></pre></td></tr></table></figure></p>
+<p>呵呵，这样就安装成功了，很简单吧！</p>
+<p>附上查到的参考文档：<a href="http://docs.fedoraproject.org/en-US/Fedora/13/html/Virtualization_Guide/sect-Virtualization-Installing_the_virtualization_packages-Installing_KVM_packages_on_an_existing_Red_Hat_Enterprise_Linux_system.html" target="_blank" rel="external">http://docs.fedoraproject.org/en-US/Fedora/13/html/Virtualization_Guide/sect-Virtualization-Installing_the_virtualization_packages-Installing_KVM_packages_on_an_existing_Red_Hat_Enterprise_Linux_system.html</a></p>
+]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[FreeBSD下安装和部署Review Board]]></title>
+      <url>http://marshalys.github.io/2013/05/20/setup-and-deployment-of-review-board-in-freebsd/</url>
+      <content type="html"><![CDATA[<p>Review Board官网：<a href="http://www.reviewboard.org" target="_blank" rel="external">http://www.reviewboard.org</a></p>
+<p>服务器环境：操作系统是FreeBSD 8.2版本</p>
+<p>具体步骤：</p>
+<p>1、安装Review Board<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">cd /usr/ports/www/reviewboard</div><div class="line">make install</div></pre></td></tr></table></figure></p>
+<p>2、安装memcached<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">cd /usr/ports/databases/memcached</div><div class="line">make install</div></pre></td></tr></table></figure></p>
+<a id="more"></a>    
+<p>3、安装MySQL Server<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">    cd /usr/ports/databases/mysql55-server</div><div class="line">    make install</div><div class="line">```    </div><div class="line">4、安装nginx</div></pre></td></tr></table></figure></p>
+<pre><code>cd /usr/ports/www/nginx
+make install
+</code></pre><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">5、创建一个Review Board站点</div></pre></td></tr></table></figure>
+<pre><code>rb-site install /usr/local/www/reviewboard
+</code></pre><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">然后按照提示输入站点相关信息。</div><div class="line"></div><div class="line">6、在nginx配置文件中配置Review Board</div><div class="line"></div><div class="line">在server配置中加入：</div></pre></td></tr></table></figure>
+<pre><code>root /usr/local/www/reviewboard/htdocs/;
+
+location /media {
+    root /usr/local/www/reviewboard/htdocs;
+}
+location /errordoc {
+    root /usr/local/www/reviewboard/htdocs;
+}
+
+location / {
+    # host and port to fastcgi server
+    fastcgi_pass 127.0.0.1:3033;
+    fastcgi_param PATH_INFO $fastcgi_script_name;
+    fastcgi_param REQUEST_METHOD $request_method;
+    fastcgi_param QUERY_STRING $query_string;
+    fastcgi_param CONTENT_TYPE $content_type;
+    fastcgi_param CONTENT_LENGTH $content_length;
+    fastcgi_pass_header Authorization;
+    fastcgi_intercept_errors off;
+    include        fastcgi_params;
+}
+</code></pre><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">7、启动Review Board：</div></pre></td></tr></table></figure>
+<pre><code>rb-site manage /usr/local/www/reviewboard runfcgi method=threaded port=3033 host=127.0.0.1 protocol=fcgi
+</code></pre><p>```</p>
+]]></content>
+    </entry>
+    
+    <entry>
+      <title><![CDATA[DFA实现敏感词过滤—javascript实现]]></title>
+      <url>http://marshalys.github.io/2013/05/20/dfashi-xian-min-gan-ci-guo-lu-javascriptshi-xian/</url>
+      <content type="html"><![CDATA[<p>前几天让一个同事去改进一下目前的敏感词过滤机制，因为原来的机制很简单粗暴，就是弄个循环一个一个判断词库里的词是否在提交内容中，词库大了之后效率不太高。</p>
+<p>同事在网上找了找，发现了一个DFA的实现，<a href="http://www.nodejser.com/?p=146401" target="_blank" rel="external">http://www.nodejser.com/?p=146401</a> 于是把代码整过来试了试，他打算比较一下这个实现跟之前的性能上能有多少改进。<br><a id="more"></a><br>昨天他很郁闷的过来跟我说，这个算法不行，他运行了测试代码后发现性能比之前的更差。于是我过去看了看他的测试代码，他测试用的数据：词库大约有6000个词，内容有5000字左右，应该没有问题，这个DFA的实现性能确实比之前的那种简单的循环判断性能还要差，于是我仔细看了看这个DFA的实现，发现这个实现没有用hash结构去保存树的节点，而是用了列表，这样查找起来效率还是不高的，于是自己简单实现了一个，测试了一下，改进还是很明显的，使用之前的测试数据，大约比之前的简单循环方式快了5倍左右：）</p>
+<p> 附上代码：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">function</span> <span class="title">buildMap</span>(<span class="params">wordList</span>) </span>&#123;</div><div class="line">    <span class="keyword">var</span> result = &#123;&#125;;</div><div class="line">    <span class="keyword">var</span> count = wordList.length;</div><div class="line">    <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; count; ++i) &#123;</div><div class="line">        <span class="keyword">var</span> map = result;</div><div class="line">        <span class="keyword">var</span> word = wordList[i];</div><div class="line">        <span class="keyword">for</span> (<span class="keyword">var</span> j = <span class="number">0</span>; j &lt; word.length; ++j) &#123;</div><div class="line">            <span class="keyword">var</span> ch = word.charAt(j);</div><div class="line">            <span class="keyword">if</span> (<span class="keyword">typeof</span>(map[ch]) != <span class="string">"undefined"</span>) &#123;</div><div class="line">                map = map[ch];</div><div class="line">                <span class="keyword">if</span> (map[<span class="string">"empty"</span>]) &#123;</div><div class="line">                    <span class="keyword">break</span>;</div><div class="line">                &#125;</div><div class="line">            &#125;</div><div class="line">            <span class="keyword">else</span> &#123;</div><div class="line">                <span class="keyword">if</span> (map[<span class="string">"empty"</span>]) &#123;</div><div class="line">                    <span class="keyword">delete</span> map[<span class="string">"empty"</span>];</div><div class="line">                &#125;</div><div class="line">                map[ch] = &#123;<span class="string">"empty"</span>:<span class="literal">true</span>&#125;;</div><div class="line">                map = map[ch];</div><div class="line">            &#125;</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">return</span> result;</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">function</span> <span class="title">check</span>(<span class="params">map, content</span>) </span>&#123;</div><div class="line">    <span class="keyword">var</span> result = [];</div><div class="line">    <span class="keyword">var</span> count = content.length;</div><div class="line">    <span class="keyword">var</span> stack = [];</div><div class="line">    <span class="keyword">var</span> point = map;</div><div class="line">    <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; count; ++i) &#123;</div><div class="line">        <span class="keyword">var</span> ch = content.charAt(i);</div><div class="line">        <span class="keyword">var</span> item = point[ch];</div><div class="line">        <span class="keyword">if</span> (<span class="keyword">typeof</span>(item) == <span class="string">"undefined"</span>) &#123;</div><div class="line">            i = i - stack.length;</div><div class="line">            stack = [];</div><div class="line">            point = map;</div><div class="line">        &#125;</div><div class="line">        <span class="keyword">else</span> <span class="keyword">if</span> (item[<span class="string">"empty"</span>]) &#123;</div><div class="line">            stack.push(ch);</div><div class="line">            result.push(stack.join(<span class="string">""</span>));</div><div class="line">            stack = [];</div><div class="line">            point = map;</div><div class="line">        &#125;</div><div class="line">        <span class="keyword">else</span> &#123;      </div><div class="line">            stack.push(ch);</div><div class="line">            point = item;</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">return</span> result;</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="keyword">var</span> test3 = <span class="function"><span class="keyword">function</span> (<span class="params">sensitive_words,content</span>) </span>&#123;</div><div class="line">    <span class="keyword">var</span> map = buildMap(sensitive_words.sort());         </div><div class="line">    <span class="keyword">var</span> begin = <span class="keyword">new</span> <span class="built_in">Date</span>();</div><div class="line">    <span class="keyword">var</span> words = check(map, content);</div><div class="line">    <span class="built_in">console</span>.log((<span class="keyword">new</span> <span class="built_in">Date</span>())-begin);</div><div class="line">    <span class="built_in">console</span>.log(words);</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+]]></content>
+    </entry>
+    
+  
+  
+</search>

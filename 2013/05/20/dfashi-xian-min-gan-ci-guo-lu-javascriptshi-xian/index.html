@@ -1,0 +1,163 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="google-site-verification" content="" />
+  
+  <title>DFA实现敏感词过滤—javascript实现</title>
+  <meta name="author" content="Mars Yuan">
+   <meta name="description" content="前几天让一个同事去改进一下目前的敏感词过滤机制，因为原来的机制很简单粗暴，就是弄个循环一个一个判断词库里的词是否在提交内容中，词库大了之后效率不太高。
+同事在网上找了找，发现了一个DFA的实现，http://www.nodejser.com/?p=146401 于是把代码整过来试了试，他打算比较一下这个实现跟之前的性能上能有多少改进。">
+  
+
+  <meta property="og:title" content="DFA实现敏感词过滤—javascript实现"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta property="og:site_name" content="Mars Yuan&#39;s Blog"/>
+ <meta property="og:image" content="undefined"/>
+  
+  <link href="/apple-touch-icon-precomposed.png" sizes="180x180" rel="apple-touch-icon-precomposed">
+  <link rel="alternate" href="/atom.xml" title="Mars Yuan&#39;s Blog" type="application/atom+xml">
+  <link rel="stylesheet" href="//cdn.bootcss.com/bootstrap/3.3.6/css/bootstrap.min.css">
+  <link rel="stylesheet" href="//cdn.bootcss.com/font-awesome/4.5.0/css/font-awesome.min.css">
+  <link rel="stylesheet" href="/css/m.min.css">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+</head>
+
+<body>
+  <div id="main">
+    <div class="behind">
+      <div class="back">
+        <a href="/" class="black-color"><i class="fa fa-times" aria-hidden="true"></i></a>
+      </div>
+      <div class="description">
+        &nbsp;Free Fly
+      </div>
+    </div>
+    <div class="container">
+      
+
+  <article class="standard post">
+    <div class="title">
+      
+  
+    <h1 class="page-title center">
+        DFA实现敏感词过滤—javascript实现
+    </h1>
+  
+
+
+    </div>
+    <div class="meta center">
+      
+<time datetime="2013-05-20T09:35:00.000Z">
+  <i class="fa fa-calendar"></i>&nbsp;
+  2013-05-20
+</time>
+
+
+
+    
+    &nbsp;
+    <i class="fa fa-tag"></i>&nbsp;
+    <a href="/categories/技术点滴/">技术点滴</a>
+
+
+
+
+    
+    &nbsp;
+    <i class="fa fa-tag"></i>&nbsp;
+    <a href="/tags/javascript/">javascript</a>·<a href="/tags/web开发/">web开发</a>
+
+
+    </div>
+    <hr>
+    <div class="picture-container">
+      
+    </div>
+    <p>前几天让一个同事去改进一下目前的敏感词过滤机制，因为原来的机制很简单粗暴，就是弄个循环一个一个判断词库里的词是否在提交内容中，词库大了之后效率不太高。</p>
+<p>同事在网上找了找，发现了一个DFA的实现，<a href="http://www.nodejser.com/?p=146401" target="_blank" rel="external">http://www.nodejser.com/?p=146401</a> 于是把代码整过来试了试，他打算比较一下这个实现跟之前的性能上能有多少改进。<br><a id="more"></a><br>昨天他很郁闷的过来跟我说，这个算法不行，他运行了测试代码后发现性能比之前的更差。于是我过去看了看他的测试代码，他测试用的数据：词库大约有6000个词，内容有5000字左右，应该没有问题，这个DFA的实现性能确实比之前的那种简单的循环判断性能还要差，于是我仔细看了看这个DFA的实现，发现这个实现没有用hash结构去保存树的节点，而是用了列表，这样查找起来效率还是不高的，于是自己简单实现了一个，测试了一下，改进还是很明显的，使用之前的测试数据，大约比之前的简单循环方式快了5倍左右：）</p>
+<p> 附上代码：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div><div class="line">42</div><div class="line">43</div><div class="line">44</div><div class="line">45</div><div class="line">46</div><div class="line">47</div><div class="line">48</div><div class="line">49</div><div class="line">50</div><div class="line">51</div><div class="line">52</div><div class="line">53</div><div class="line">54</div><div class="line">55</div><div class="line">56</div><div class="line">57</div><div class="line">58</div><div class="line">59</div><div class="line">60</div></pre></td><td class="code"><pre><div class="line"><span class="function"><span class="keyword">function</span> <span class="title">buildMap</span>(<span class="params">wordList</span>) </span>&#123;</div><div class="line">    <span class="keyword">var</span> result = &#123;&#125;;</div><div class="line">    <span class="keyword">var</span> count = wordList.length;</div><div class="line">    <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; count; ++i) &#123;</div><div class="line">        <span class="keyword">var</span> map = result;</div><div class="line">        <span class="keyword">var</span> word = wordList[i];</div><div class="line">        <span class="keyword">for</span> (<span class="keyword">var</span> j = <span class="number">0</span>; j &lt; word.length; ++j) &#123;</div><div class="line">            <span class="keyword">var</span> ch = word.charAt(j);</div><div class="line">            <span class="keyword">if</span> (<span class="keyword">typeof</span>(map[ch]) != <span class="string">"undefined"</span>) &#123;</div><div class="line">                map = map[ch];</div><div class="line">                <span class="keyword">if</span> (map[<span class="string">"empty"</span>]) &#123;</div><div class="line">                    <span class="keyword">break</span>;</div><div class="line">                &#125;</div><div class="line">            &#125;</div><div class="line">            <span class="keyword">else</span> &#123;</div><div class="line">                <span class="keyword">if</span> (map[<span class="string">"empty"</span>]) &#123;</div><div class="line">                    <span class="keyword">delete</span> map[<span class="string">"empty"</span>];</div><div class="line">                &#125;</div><div class="line">                map[ch] = &#123;<span class="string">"empty"</span>:<span class="literal">true</span>&#125;;</div><div class="line">                map = map[ch];</div><div class="line">            &#125;</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">return</span> result;</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">function</span> <span class="title">check</span>(<span class="params">map, content</span>) </span>&#123;</div><div class="line">    <span class="keyword">var</span> result = [];</div><div class="line">    <span class="keyword">var</span> count = content.length;</div><div class="line">    <span class="keyword">var</span> stack = [];</div><div class="line">    <span class="keyword">var</span> point = map;</div><div class="line">    <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; count; ++i) &#123;</div><div class="line">        <span class="keyword">var</span> ch = content.charAt(i);</div><div class="line">        <span class="keyword">var</span> item = point[ch];</div><div class="line">        <span class="keyword">if</span> (<span class="keyword">typeof</span>(item) == <span class="string">"undefined"</span>) &#123;</div><div class="line">            i = i - stack.length;</div><div class="line">            stack = [];</div><div class="line">            point = map;</div><div class="line">        &#125;</div><div class="line">        <span class="keyword">else</span> <span class="keyword">if</span> (item[<span class="string">"empty"</span>]) &#123;</div><div class="line">            stack.push(ch);</div><div class="line">            result.push(stack.join(<span class="string">""</span>));</div><div class="line">            stack = [];</div><div class="line">            point = map;</div><div class="line">        &#125;</div><div class="line">        <span class="keyword">else</span> &#123;      </div><div class="line">            stack.push(ch);</div><div class="line">            point = item;</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line">    <span class="keyword">return</span> result;</div><div class="line">&#125;</div><div class="line"></div><div class="line"><span class="keyword">var</span> test3 = <span class="function"><span class="keyword">function</span> (<span class="params">sensitive_words,content</span>) </span>&#123;</div><div class="line">    <span class="keyword">var</span> map = buildMap(sensitive_words.sort());         </div><div class="line">    <span class="keyword">var</span> begin = <span class="keyword">new</span> <span class="built_in">Date</span>();</div><div class="line">    <span class="keyword">var</span> words = check(map, content);</div><div class="line">    <span class="built_in">console</span>.log((<span class="keyword">new</span> <span class="built_in">Date</span>())-begin);</div><div class="line">    <span class="built_in">console</span>.log(words);</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+
+
+  </article>
+  </script>
+    <script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+  </script>
+  <div class="busuanzi center">
+    page PV:&nbsp;<span id="busuanzi_value_page_pv"></span>&nbsp;・&nbsp;
+    site PV:&nbsp;<span id="busuanzi_value_site_pv"></span>&nbsp;・&nbsp;
+    site UV:&nbsp;<span id="busuanzi_value_site_uv"></span>
+  </div>
+
+
+
+
+    </div>
+  </div>
+  <footer class="page-footer"><div class="clearfix">
+</div>
+<div class="right-foot container">
+    <div class="firstrow">
+        <a href="#top" >
+        <i class="fa fa-arrow-right"></i>
+        </a>
+        © Free Fly 2005-2083
+    </div>
+    <div class="secondrow">
+        <a href="https://marshalys.github.io/">
+        Mars Yuan
+        </a>
+    </div>
+</div>
+<div class="clearfix">
+</div>
+</footer>
+  <script src="//cdn.bootcss.com/jquery/2.2.1/jquery.min.js"></script>
+<script src="/js/search.js"></script>
+<script type="text/javascript">
+
+// comments below to disable loading animation
+function revealOnScroll() {
+  var scrolled = $(window).scrollTop();
+  $(".excerpt, .index-title, .index-meta, p").each(function() {
+    var current = $(this),
+      height = $(window).outerHeight(),
+      offsetTop = current.offset().top;
+    (scrolled + height + 50 > offsetTop) ? current.addClass("animation"):'';
+  });
+}
+$(window).on("scroll", revealOnScroll);
+$(document).ready(revealOnScroll)
+
+// disqus scripts
+
+
+// dropdown scripts
+$(".dropdown").click(function(event) {
+  var current = $(this);
+  event.stopPropagation();
+  $(current).children(".dropdown-content")[($(current).children(".dropdown-content").hasClass("open"))?'removeClass':'addClass']("open")
+});
+$(document).click(function(){
+    $(".dropdown-content").removeClass("open");
+})
+
+// back to top scripts
+$("a[href='#top']").click(function() {
+  $("html, body").animate({ scrollTop: 0 }, 500);
+  return false;
+});
+
+
+var path = "/search.xml";
+searchFunc(path, 'local-search-input', 'local-search-result');
+
+</script>
+
+</body>
+</html>

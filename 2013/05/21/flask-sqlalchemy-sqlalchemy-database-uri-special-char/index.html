@@ -1,0 +1,162 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="google-site-verification" content="" />
+  
+  <title>Flask-SQLAlchemy的SQLALCHEMY_DATABASE_URI中密码有特殊字符的处理办法</title>
+  <meta name="author" content="Mars Yuan">
+   <meta name="description" content="今天中午，群里面有个哥们问了一个问题，他用的Flask-SQLAlchmey来做数据库访问，而数据库连接串配置项SQLALCHEMY_DATABASE_URI的格式为1mysql://username:password@server/db
+这种的，由于他们的密码有个特殊字符@，这样如果直接把密码写在">
+  
+
+  <meta property="og:title" content="Flask-SQLAlchemy的SQLALCHEMY_DATABASE_URI中密码有特殊字符的处理办法"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta property="og:site_name" content="Mars Yuan&#39;s Blog"/>
+ <meta property="og:image" content="undefined"/>
+  
+  <link href="/apple-touch-icon-precomposed.png" sizes="180x180" rel="apple-touch-icon-precomposed">
+  <link rel="alternate" href="/atom.xml" title="Mars Yuan&#39;s Blog" type="application/atom+xml">
+  <link rel="stylesheet" href="//cdn.bootcss.com/bootstrap/3.3.6/css/bootstrap.min.css">
+  <link rel="stylesheet" href="//cdn.bootcss.com/font-awesome/4.5.0/css/font-awesome.min.css">
+  <link rel="stylesheet" href="/css/m.min.css">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+</head>
+
+<body>
+  <div id="main">
+    <div class="behind">
+      <div class="back">
+        <a href="/" class="black-color"><i class="fa fa-times" aria-hidden="true"></i></a>
+      </div>
+      <div class="description">
+        &nbsp;Free Fly
+      </div>
+    </div>
+    <div class="container">
+      
+
+  <article class="standard post">
+    <div class="title">
+      
+  
+    <h1 class="page-title center">
+        Flask-SQLAlchemy的SQLALCHEMY_DATABASE_URI中密码有特殊字符的处理办法
+    </h1>
+  
+
+
+    </div>
+    <div class="meta center">
+      
+<time datetime="2013-05-21T01:00:00.000Z">
+  <i class="fa fa-calendar"></i>&nbsp;
+  2013-05-21
+</time>
+
+
+
+    
+    &nbsp;
+    <i class="fa fa-tag"></i>&nbsp;
+    <a href="/categories/技术点滴/">技术点滴</a>
+
+
+
+
+    
+    &nbsp;
+    <i class="fa fa-tag"></i>&nbsp;
+    <a href="/tags/python/">python</a>·<a href="/tags/sqlalchemy/">sqlalchemy</a>
+
+
+    </div>
+    <hr>
+    <div class="picture-container">
+      
+    </div>
+    <p>今天中午，群里面有个哥们问了一个问题，他用的Flask-SQLAlchmey来做数据库访问，而数据库连接串配置项SQLALCHEMY_DATABASE_URI的格式为<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">mysql://username:password@server/db</div></pre></td></tr></table></figure></p>
+<p>这种的，由于他们的密码有个特殊字符@，这样如果直接把密码写在连接串的配置项中，就出问题了，连接出错。群里面几个热心人各种提议，未果，于是开始有人说：“密码搞什么特殊字符嘛，把密码改了吧！”。我觉得搞技术的人怎么能是这种心态呢？这也不是什么解决不了的难题，遇到问题就考虑逃避怎么行。虽然这一块我也不是很熟悉，但是这东东貌似开源的，于是决定去查一下。其实这个问题比较简单，查看了一下源代码，大概花了一刻钟，发现原来这个连接串密码可以是通过使用URL编码来处理特殊字符的，所以将密码用URL编码后问题就能解决了。</p>
+<p>最后不得不赞一下，开源确实好。</p>
+
+
+  </article>
+  </script>
+    <script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+  </script>
+  <div class="busuanzi center">
+    page PV:&nbsp;<span id="busuanzi_value_page_pv"></span>&nbsp;・&nbsp;
+    site PV:&nbsp;<span id="busuanzi_value_site_pv"></span>&nbsp;・&nbsp;
+    site UV:&nbsp;<span id="busuanzi_value_site_uv"></span>
+  </div>
+
+
+
+
+    </div>
+  </div>
+  <footer class="page-footer"><div class="clearfix">
+</div>
+<div class="right-foot container">
+    <div class="firstrow">
+        <a href="#top" >
+        <i class="fa fa-arrow-right"></i>
+        </a>
+        © Free Fly 2005-2083
+    </div>
+    <div class="secondrow">
+        <a href="https://marshalys.github.io/">
+        Mars Yuan
+        </a>
+    </div>
+</div>
+<div class="clearfix">
+</div>
+</footer>
+  <script src="//cdn.bootcss.com/jquery/2.2.1/jquery.min.js"></script>
+<script src="/js/search.js"></script>
+<script type="text/javascript">
+
+// comments below to disable loading animation
+function revealOnScroll() {
+  var scrolled = $(window).scrollTop();
+  $(".excerpt, .index-title, .index-meta, p").each(function() {
+    var current = $(this),
+      height = $(window).outerHeight(),
+      offsetTop = current.offset().top;
+    (scrolled + height + 50 > offsetTop) ? current.addClass("animation"):'';
+  });
+}
+$(window).on("scroll", revealOnScroll);
+$(document).ready(revealOnScroll)
+
+// disqus scripts
+
+
+// dropdown scripts
+$(".dropdown").click(function(event) {
+  var current = $(this);
+  event.stopPropagation();
+  $(current).children(".dropdown-content")[($(current).children(".dropdown-content").hasClass("open"))?'removeClass':'addClass']("open")
+});
+$(document).click(function(){
+    $(".dropdown-content").removeClass("open");
+})
+
+// back to top scripts
+$("a[href='#top']").click(function() {
+  $("html, body").animate({ scrollTop: 0 }, 500);
+  return false;
+});
+
+
+var path = "/search.xml";
+searchFunc(path, 'local-search-input', 'local-search-result');
+
+</script>
+
+</body>
+</html>
